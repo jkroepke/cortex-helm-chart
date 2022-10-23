@@ -17,7 +17,7 @@ spec:
     matchLabels:
       {{- include "cortex.ingesterSelectorLabels" . | nindent 6 }}
   updateStrategy:
-    {{- toYaml .Values.ingester.statefulStrategy | nindent 4 }}          
+    {{- toYaml .Values.ingester.statefulStrategy | nindent 4 }}
   podManagementPolicy: "{{ .Values.ingester.statefulSet.podManagementPolicy }}"
   serviceName: {{ template "cortex.fullname" . }}-ingester-headless
   {{- if .Values.ingester.persistentVolume.enabled }}
@@ -91,6 +91,16 @@ spec:
         - name: storage
           emptyDir: {}
         {{- end }}
+        {{- if .Values.tls.enabled }}
+        - name: tls-server-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ template "cortex.fullname" . }}-server-cert
+        - name: tls-client-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ template "cortex.fullname" . }}-client-cert
+        {{- end }}
         {{- if .Values.ingester.extraVolumes }}
         {{- toYaml .Values.ingester.extraVolumes | nindent 8 }}
         {{- end }}
@@ -121,6 +131,12 @@ spec:
               {{- with .Values.ingester.persistentVolume.subPath }}
               subPath: {{ . }}
               {{- end }}
+            {{- if .Values.tls.enabled }}
+            - name: tls-server-certs
+              mountPath: /certs/server/
+            - name: tls-client-certs
+              mountPath: /certs/client/
+            {{- end }}
           ports:
             - name: http-metrics
               containerPort: {{ .Values.config.server.http_listen_port }}

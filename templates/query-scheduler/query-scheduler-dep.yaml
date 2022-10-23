@@ -65,6 +65,12 @@ spec:
               mountPath: /etc/cortex
             - name: runtime-config
               mountPath: /etc/cortex-runtime-config
+            {{- if .Values.tls.enabled }}
+            - name: tls-server-certs
+              mountPath: /certs/server/
+            - name: tls-client-certs
+              mountPath: /certs/client/
+            {{- end }}
           ports:
             - name: http-metrics
               containerPort: {{ .Values.config.server.http_listen_port }}
@@ -110,6 +116,16 @@ spec:
         - name: runtime-config
           configMap:
             name: {{ template "cortex.fullname" . }}-runtime-config
+        {{- if .Values.tls.enabled }}
+        - name: tls-server-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ template "cortex.fullname" . }}-server-cert
+        - name: tls-client-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ template "cortex.fullname" . }}-client-cert
+        {{- end }}
         {{- if .Values.query_scheduler.extraVolumes }}
         {{- toYaml .Values.query_scheduler.extraVolumes | nindent 8 }}
         {{- end }}

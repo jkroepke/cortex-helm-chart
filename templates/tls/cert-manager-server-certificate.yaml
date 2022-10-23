@@ -1,0 +1,29 @@
+{{- if and .Values.tls.enabled .Values.tls.certManager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ template "cortex.certManagerIssuerName" . }}-server
+spec:
+  isCA: false
+  duration: {{ .Values.tls.certManager.server.duration }}
+  renewBefore: {{ .Values.tls.certManager.server.renewBefore }}
+  commonName: {{ template "cortex.fullname" . }}-server
+  dnsNames:
+    - "*.${{ .Release.Namespace }}"
+    - "*.${{ .Release.Namespace }}.svc"
+    - "*.${{ .Release.Namespace }}.svc.cluster"
+    - "*.${{ .Release.Namespace }}.svc.cluster.local"
+  secretName: {{ template "cortex.fullname" . }}-server-cert
+  usages:
+    - server auth
+    - digital signature
+    - key encipherment
+  privateKey:
+    algorithm: {{ .Values.tls.certManager.algorithm }}
+    size: {{ .Values.tls.certManager.size }}
+    rotationPolicy: Always
+  issuerRef:
+    name: {{ template "cortex.certManagerIssuerName" . }}
+    kind: {{ .Values.tls.certManager.issuer.kind }}
+    group: cert-manager.io
+{{- end }}

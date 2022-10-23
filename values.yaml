@@ -90,9 +90,32 @@ config:
       memcached_client:
         # -- Maximum time to wait before giving up on memcached requests.
         timeout: 1s
+  alertmanager_storage:
+    s3:
+      endpoint: minio.default.svc.cluster.local:9000
+      bucket_name: alertmanager
+      access_key_id: admin
+      secret_access_key: admin123
+      signature_version: v2
+      insecure: true
+  ruler_storage:
+    s3:
+      endpoint: minio.default.svc.cluster.local:9000
+      bucket_name: alertmanager
+      access_key_id: admin
+      secret_access_key: admin123
+      signature_version: v2
+      insecure: true
   blocks_storage:
     tsdb:
       dir: /data/tsdb
+    s3:
+      endpoint: minio.default.svc.cluster.local:9000
+      bucket_name: cortex
+      access_key_id: admin
+      secret_access_key: admin123
+      signature_version: v2
+      insecure: true
     bucket_store:
       sync_dir: /data/tsdb-sync
       bucket_index:
@@ -1457,16 +1480,17 @@ store_gateway:
     httpGet:
       path: /ready
       port: http-metrics
-      scheme: HTTP
+      scheme: '{{ $.Values.tls.enabled | ternary "HTTPS" "HTTP" }}'
   livenessProbe:
     httpGet:
       path: /ready
       port: http-metrics
-      scheme: HTTP
+      scheme: '{{ $.Values.tls.enabled | ternary "HTTPS" "HTTP" }}'
   readinessProbe:
     httpGet:
       path: /ready
       port: http-metrics
+      scheme: '{{ $.Values.tls.enabled | ternary "HTTPS" "HTTP" }}'
 
   securityContext: {}
 
@@ -1772,3 +1796,91 @@ configsdb_postgresql:
     existing_secret:
       name:
       key:
+
+tls:
+  enabled: true
+  certManager:
+    enabled: true
+    issuer:
+      create: true
+      kind: Issuer
+      name:
+    algorithm: ECDSA
+    size: 256
+    ca:
+      duration: 87600h
+      renewBefore: 360h
+    server:
+      duration: 17532h
+      renewBefore: 360h
+    client:
+      duration: 17532h
+      renewBefore: 360h
+
+  config:
+    server:
+      http_tls_config:
+        cert_file: /certs/server/tls.crt
+        key_file: /certs/server/tls.key
+        client_auth_type: VerifyClientCertIfGiven
+        client_ca_file: /certs/client/ca.crt
+      grpc_tls_config:
+        cert_file: /certs/server/tls.crt
+        key_file: /certs/server/tls.key
+        client_auth_type: RequireAndVerifyClientCert
+        client_ca_file: /certs/client/ca.crt
+
+    alertmanager:
+      alertmanager_client:
+        tls_enabled: true
+        tls_cert_path: /certs/client/tls.crt
+        tls_key_path: /certs/client/tls.key
+        tls_ca_path: /certs/server/ca.crt
+
+    querier:
+      store_gateway_client:
+        tls_enabled: true
+        tls_cert_path: /certs/client/tls.crt
+        tls_key_path: /certs/client/tls.key
+        tls_ca_path: /certs/server/ca.crt
+
+    query_scheduler:
+      grpc_client_config:
+        tls_enabled: true
+        tls_cert_path: /certs/client/tls.crt
+        tls_key_path: /certs/client/tls.key
+        tls_ca_path: /certs/server/ca.crt
+
+    frontend:
+      grpc_client_config:
+        tls_enabled: true
+        tls_cert_path: /certs/client/tls.crt
+        tls_key_path: /certs/client/tls.key
+        tls_ca_path: /certs/server/ca.crt
+
+    frontend_worker:
+      grpc_client_config:
+        tls_enabled: true
+        tls_cert_path: /certs/client/tls.crt
+        tls_key_path: /certs/client/tls.key
+        tls_ca_path: /certs/server/ca.crt
+
+    ingester_client:
+      grpc_client_config:
+        tls_enabled: true
+        tls_cert_path: /certs/client/tls.crt
+        tls_key_path: /certs/client/tls.key
+        tls_ca_path: /certs/server/ca.crt
+
+    ruler:
+      ruler_client:
+        tls_enabled: true
+        tls_cert_path: /certs/client/tls.crt
+        tls_key_path: /certs/client/tls.key
+        tls_ca_path: /certs/server/ca.crt
+
+    memberlist:
+      tls_enabled: true
+      tls_cert_path: /certs/client/tls.crt
+      tls_key_path: /certs/client/tls.key
+      tls_ca_path: /certs/server/ca.crt

@@ -1,0 +1,42 @@
+{{- if and .Values.tls.enabled .Values.tls.certManager.enabled .Values.tls.certManager.issuer.create }}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ template "cortex.certManagerIssuerName" . }}-selfsigned-issuer
+  labels:
+    {{- include "cortex.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ template "cortex.certManagerIssuerName" . }}-root-ca
+spec:
+  isCA: true
+  duration: {{ .Values.tls.certManager.ca.duration }}
+  renewBefore: {{ .Values.tls.certManager.ca.renewBefore }}
+  subject:
+    organizations:
+      - "{{ template "cortex.fullname" . }}"
+  commonName: {{ template "cortex.fullname" . }}-ca
+  dnsNames:
+    - {{ template "cortex.fullname" . }}-ca
+  secretName: {{ template "cortex.fullname" . }}-ca-cert
+  privateKey:
+    algorithm: {{ .Values.tls.certManager.algorithm }}
+    size: {{ .Values.tls.certManager.size }}
+  issuerRef:
+    name: {{ template "cortex.certManagerIssuerName" . }}-selfsigned-issuer
+    kind: {{ .Values.tls.certManager.issuer.kind }}
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ template "cortex.certManagerIssuerName" . }}
+spec:
+  ca:
+    secretName: {{ template "cortex.fullname" . }}-ca-cert
+{{- end }}

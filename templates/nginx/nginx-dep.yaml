@@ -66,6 +66,12 @@ spec:
               mountPath: /etc/apache2
               readOnly: true
             {{- end }}
+            {{- if .Values.tls.enabled }}
+            - name: tls-server-certs
+              mountPath: /certs/server/
+            - name: tls-client-certs
+              mountPath: /certs/client/
+            {{- end }}
           ports:
             - name: http-metrics
               containerPort: {{ .Values.nginx.http_listen_port }}
@@ -108,6 +114,16 @@ spec:
           secret:
             defaultMode: 420
             secretName: {{ .Values.nginx.config.basicAuthSecretName }}
+        {{- end }}
+        {{- if .Values.tls.enabled }}
+        - name: tls-server-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ template "cortex.fullname" . }}-server-cert
+        - name: tls-client-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ template "cortex.fullname" . }}-client-cert
         {{- end }}
         {{- if .Values.nginx.extraVolumes }}
         {{- toYaml .Values.nginx.extraVolumes | nindent 8}}

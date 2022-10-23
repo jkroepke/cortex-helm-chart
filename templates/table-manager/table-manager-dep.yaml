@@ -64,6 +64,12 @@ spec:
             - name: storage
               mountPath: "/data"
               subPath: {{ .Values.table_manager.persistentVolume.subPath }}
+            {{- if .Values.tls.enabled }}
+            - name: tls-server-certs
+              mountPath: /certs/server/
+            - name: tls-client-certs
+              mountPath: /certs/client/
+            {{- end }}
           ports:
             - name: http-metrics
               containerPort: {{ .Values.config.server.http_listen_port }}
@@ -104,6 +110,17 @@ spec:
             name: {{ template "cortex.fullname" . }}-runtime-config
         - name: storage
           emptyDir: {}
+        {{- if .Values.tls.enabled }}
+        - name: tls-server-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ template "cortex.fullname" . }}-server-cert
+        - name: tls-client-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ template "cortex.fullname" . }}-client-cert
+        {{- end }}
+
         {{- if .Values.table_manager.extraVolumes }}
         {{- toYaml .Values.table_manager.extraVolumes | nindent 8}}
         {{- end }}

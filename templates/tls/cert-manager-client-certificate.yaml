@@ -1,0 +1,24 @@
+{{- if and .Values.tls.enabled .Values.tls.certManager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ template "cortex.certManagerIssuerName" . }}-client
+spec:
+  isCA: false
+  duration: {{ .Values.tls.certManager.server.duration }}
+  renewBefore: {{ .Values.tls.certManager.server.renewBefore }}
+  commonName: {{ template "cortex.fullname" . }}-client
+  secretName: {{ template "cortex.fullname" . }}-client-cert
+  usages:
+    - client auth
+    - digital signature
+    - key encipherment
+  privateKey:
+    algorithm: {{ .Values.tls.certManager.algorithm }}
+    size: {{ .Values.tls.certManager.size }}
+    rotationPolicy: Always
+  issuerRef:
+    name: {{ template "cortex.certManagerIssuerName" . }}
+    kind: {{ .Values.tls.certManager.issuer.kind }}
+    group: cert-manager.io
+{{- end }}
